@@ -54,10 +54,10 @@ private:
     
     /* ---- STATE MANAGEMENT */
     
-    enum class FrameState {Free, Used, HoS};
+    //enum class FrameState {Free, Used, HoS};
 
-    FrameState get_state(unsigned long _frame_no);
-    void set_state(unsigned long _frame_no, FrameState _state);
+    //FrameState get_state(unsigned long _frame_no);
+    //void set_state(unsigned long _frame_no, FrameState _state);
     
 public:
 
