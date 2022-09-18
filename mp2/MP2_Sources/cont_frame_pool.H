@@ -52,6 +52,12 @@ private:
     static ContFramePool* list_head;
     ContFramePool* next_pool;
     
+    /* ---- STATE MANAGEMENT */
+    
+    enum class FrameState {Free, Used, HoS};
+
+    FrameState get_state(unsigned long _frame_no);
+    void set_state(unsigned long _frame_no, FrameState _state);
     
 public:
 
