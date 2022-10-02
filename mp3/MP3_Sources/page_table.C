@@ -77,16 +77,16 @@ void PageTable::enable_paging()
 
 void PageTable::handle_fault(REGS * _r)
 {
-  /*unsigned long logical_address = read_cr2();
+  unsigned long logical_address = read_cr2();
   unsigned long pt_indx = (logical_address >> 12) & PTE_INDX_MASK;
   unsigned long pd_indx = logical_address >> (12+10) ;
   
   unsigned long *curr_pd_address = (unsigned long *) read_cr3(); //ptbr_value
   unsigned long error_word = _r->err_code;
   
-  if (error_word & VALID_BIT == 0) { //invalid entry in pde/pte
+  if ((error_word & VALID_BIT) == 0) { //invalid entry in pde/pte
   	unsigned long pde = curr_pd_address[pd_indx];
-  	if(pde & VALID_BIT ==0) { //invalide entry in pde
+  	if((pde & VALID_BIT) ==0) { //invalide entry in pde
   		curr_pd_address[pd_indx] = (unsigned long)(kernel_mem_pool->get_frames(1) * PAGE_SIZE) | WRITE_BIT | VALID_BIT;
   		unsigned long *curr_pt_address = (unsigned long *)(pde & PT_ADDR_MASK); 
   		
@@ -94,17 +94,15 @@ void PageTable::handle_fault(REGS * _r)
   		for(i=0;i<n_entries;i++){
   			curr_pt_address[i] = 0 | USER_BIT;
   		}
-  		curr_pt_address[pte] = (process_mem_pool->get_frames(1) * PAGE_SIZE) | USER_BIT | WRITE_BIT | VALID_BIT;
+  		curr_pt_address[pt_indx] = (process_mem_pool->get_frames(1) * PAGE_SIZE) | USER_BIT | WRITE_BIT | VALID_BIT;
   	}
   	else { //invalid entry in pte
   		unsigned long *curr_pt_address = (unsigned long *)(pde & PT_ADDR_MASK); 
-  		curr_pt_address[pte] = (process_mem_pool->get_frames(1) * PAGE_SIZE) | USER_BIT | WRITE_BIT | VALID_BIT;
+  		curr_pt_address[pt_indx] = (process_mem_pool->get_frames(1) * PAGE_SIZE) | USER_BIT | WRITE_BIT | VALID_BIT;
   	}
-  
+  }else {
+  	Console::puts("Some error has occurred\n");
   }
-  */
-  
-  assert(false);
   Console::puts("handled page fault\n");
 }
 
