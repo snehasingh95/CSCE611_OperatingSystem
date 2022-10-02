@@ -126,39 +126,6 @@
 /*--------------------------------------------------------------------------*/
 /* METHODS FOR CLASS   C o n t F r a m e P o o l */
 /*--------------------------------------------------------------------------*/
-ContFramePool::FrameState ContFramePool::get_state(unsigned long _frame_no) {
-    unsigned int bitmap_index = _frame_no / 4;
-    unsigned char mask1 = 0x1 << (2*_frame_no % 4);
-    unsigned char mask2 = 0x1 << (2*_frame_no % 4+1);
-    unsigned long result = (bitmap[bitmap_index] & mask2)*10+(bitmap[bitmap_index] & mask1);
-    if (result==0)
-    	return FrameState::Used;
-    else if (result==1)
-    	return FrameState::Used;
-    return FrameState::HoS;
-}
-
-void ContFramePool::set_state(unsigned long _frame_no, FrameState _state) {
-    unsigned int bitmap_index = _frame_no / 4;
-    unsigned char mask1 = 0x1 << (2*_frame_no % 4);
-    unsigned char mask2 = 0x1 << (2*_frame_no % 4+1);
-
-    switch(_state) {
-      case FrameState::Used:
-      bitmap[bitmap_index] ^= mask1;
-      bitmap[bitmap_index] ^= mask2;
-      break;
-    case FrameState::Free:
-      bitmap[bitmap_index] |= mask1;
-      bitmap[bitmap_index] ^= mask2;
-      break;
-    case FrameState::HoS:
-      bitmap[bitmap_index] ^= mask1;
-      bitmap[bitmap_index] |= mask2;
-      break;
-    }
-    
-}
 
 ContFramePool* ContFramePool::list_head;
 ContFramePool* ContFramePool::last_node;
@@ -185,14 +152,12 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
     
     // Everything ok. Proceed to mark all frame as free.
     for(unsigned long fno = 0; fno < n_frames; fno++) {
-    	//bitmap[fno] = 'f';
-    	set_state(fno, FrameState::Free);
+    	bitmap[fno] = 'f';
     }
     
     // Mark the first frame as being used if it is being used
     if(info_frame_no == 0) {
-    	//bitmap[0] = 'u';
-    	set_state(0, FrameState::Used);
+    	bitmap[0] = 'u';
         n_free_frames--;
     }
     
@@ -217,9 +182,9 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
     // Find a frame that is not being used and return its frame index.
     // Mark that frame as being used in the bitmap.
     unsigned long i=0, found=0, count=0;
+
     for(;i<n_frames;i++){
-    	//if(bitmap[i] == 'f')
-    	if(get_state(i) == FrameState::Free)
+    	if(bitmap[i] == 'f')
     		count++;
     	else
     		count = 0;
@@ -234,12 +199,10 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
     	return 0;
     }
     unsigned long start_frame = i-_n_frames+1;
-    //bitmap[start_frame]= 'h';
-    set_state(start_frame, FrameState::HoS);
+    bitmap[start_frame]= 'h';
     n_free_frames--;
     for(i=start_frame+1;i<start_frame+_n_frames;i++){
-	//bitmap[i] = 'u';
-	set_state(i, FrameState::Used);
+	bitmap[i] = 'u';
 	n_free_frames--;
     }
     return (start_frame + base_frame_no);
@@ -248,13 +211,11 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
                                       unsigned long _n_frames)
 {
-    //bitmap[_base_frame_no] = 'h';
-    set_state(_base_frame_no, FrameState::HoS);
+    bitmap[_base_frame_no] = 'h';
     n_free_frames--;
     
     for(unsigned long i = _base_frame_no+1; i<_base_frame_no+_n_frames; i++){
-    	//bitmap[i] = 'u';
-    	set_state(i, FrameState::Used);
+    	bitmap[i] = 'u';
     	n_free_frames--;
     }
     
@@ -278,20 +239,16 @@ void ContFramePool::release_frames(unsigned long _first_frame_no)
     
     unsigned char * curr_pool_bitmap = curr_pool->bitmap;
     
-    //if(curr_pool_bitmap[_first_frame_no] != 'h') {
-    if(curr_pool->get_state(_first_frame_no) != FrameState::HoS) {
+    if(curr_pool_bitmap[_first_frame_no] != 'h') {
     	Console::puts("First frame is not a head frame\n");
     	return;
     }
     
-    //curr_pool_bitmap[_first_frame_no] = 'f';
-    curr_pool->set_state(_first_frame_no, FrameState::Free);
+    curr_pool_bitmap[_first_frame_no] = 'f';
     curr_pool->n_free_frames++;
     _first_frame_no++;
-    //while(curr_pool_bitmap[_first_frame_no] == 'u') {
-    while(curr_pool->get_state(_first_frame_no) == FrameState::Used) {
-    	//curr_pool_bitmap[_first_frame_no] = 'f';
-    	curr_pool->set_state(_first_frame_no, FrameState::Free);
+    while(curr_pool_bitmap[_first_frame_no] == 'u') {
+    	curr_pool_bitmap[_first_frame_no] = 'f';
     	curr_pool->n_free_frames++;
     	_first_frame_no++;
     }
@@ -299,7 +256,9 @@ void ContFramePool::release_frames(unsigned long _first_frame_no)
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
 {
-	//unsigned long max_bits_in_frame = 8*ContFramePool::FRAME_SIZE;
-	unsigned long max_bits_in_frame = 8*ContFramePool::FRAME_SIZE/2;
-	return _n_frames / max_bits_in_frame + (_n_frames % max_bits_in_frame > 0 ? 1 : 0);
+
+	unsigned long bits_per_frame = 8, max_bits_in_frame = bits_per_frame*ContFramePool::FRAME_SIZE, 
+	bits_needed_per_bitmap_entry = 8, total_bits_needed = bits_needed_per_bitmap_entry * _n_frames;
+	
+	return total_bits_needed / max_bits_in_frame + (total_bits_needed % max_bits_in_frame > 0 ? 1 : 0);
 }
