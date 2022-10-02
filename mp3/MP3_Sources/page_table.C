@@ -13,6 +13,9 @@ unsigned long PageTable::shared_size = 0;
 #define VALID_BIT 1 //bit 0 -> 1=valid, 0=absent
 #define WRITE_BIT 2 //bit 1 -> 1=read/write, 0=read-only
 #define USER_BIT 14 //bit 2 -> 1=user, 0=kernel
+#define MSB_MASK 0x80000000
+#define PTE_INDX_MASK 0x3ff
+#define PT_ADDR_MASK 0xfffff000
 
 void PageTable::init_paging(ContFramePool * _kernel_mem_pool,
                             ContFramePool * _process_mem_pool,
@@ -67,12 +70,40 @@ void PageTable::load()
 
 void PageTable::enable_paging()
 {
-   assert(false);
+   paging_enabled = 1;
+   write_cr0(read_cr0() | MSB_MASK); //setting the MSB of cr3 to enable paging.
    Console::puts("Enabled paging\n");
 }
 
 void PageTable::handle_fault(REGS * _r)
 {
+  /*unsigned long logical_address = read_cr2();
+  unsigned long pt_indx = (logical_address >> 12) & PTE_INDX_MASK;
+  unsigned long pd_indx = logical_address >> (12+10) ;
+  
+  unsigned long *curr_pd_address = (unsigned long *) read_cr3(); //ptbr_value
+  unsigned long error_word = _r->err_code;
+  
+  if (error_word & VALID_BIT == 0) { //invalid entry in pde/pte
+  	unsigned long pde = curr_pd_address[pd_indx];
+  	if(pde & VALID_BIT ==0) { //invalide entry in pde
+  		curr_pd_address[pd_indx] = (unsigned long)(kernel_mem_pool->get_frames(1) * PAGE_SIZE) | WRITE_BIT | VALID_BIT;
+  		unsigned long *curr_pt_address = (unsigned long *)(pde & PT_ADDR_MASK); 
+  		
+  		unsigned long i,n_entries=PAGE_SIZE/4;
+  		for(i=0;i<n_entries;i++){
+  			curr_pt_address[i] = 0 | USER_BIT;
+  		}
+  		curr_pt_address[pte] = (process_mem_pool->get_frames(1) * PAGE_SIZE) | USER_BIT | WRITE_BIT | VALID_BIT;
+  	}
+  	else { //invalid entry in pte
+  		unsigned long *curr_pt_address = (unsigned long *)(pde & PT_ADDR_MASK); 
+  		curr_pt_address[pte] = (process_mem_pool->get_frames(1) * PAGE_SIZE) | USER_BIT | WRITE_BIT | VALID_BIT;
+  	}
+  
+  }
+  */
+  
   assert(false);
   Console::puts("handled page fault\n");
 }
