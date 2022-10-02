@@ -93,7 +93,7 @@
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
-
+#define KB * (0x1 << 10)
 /* -- (none) -- */
 
 /*--------------------------------------------------------------------------*/
@@ -126,41 +126,167 @@
 /*--------------------------------------------------------------------------*/
 /* METHODS FOR CLASS   C o n t F r a m e P o o l */
 /*--------------------------------------------------------------------------*/
+ContFramePool::FrameState ContFramePool::get_state(unsigned long _frame_no) {
+    unsigned int bitmap_index = _frame_no / 4;
+    unsigned long position = 2*(_frame_no % 4);
+    unsigned char mask = 0x1 << (position) | 0x1 << (position+1);
+    unsigned long result = bitmap[bitmap_index] & mask;
+    if (result==0)
+    	return FrameState::Free;
+    else if (result==mask)
+    	return FrameState::Used;
+    return FrameState::HoS;
+}
+
+void ContFramePool::set_state(unsigned long _frame_no, FrameState _state) {
+    unsigned int bitmap_index = _frame_no / 4;
+    unsigned long position = 2*(_frame_no % 4);
+    unsigned char mask = 0x1 << (position) | 0x1 << (position+1);
+
+    switch(_state) {
+      case FrameState::Used: // axyb , 0110 -> a11b (11)
+        bitmap[bitmap_index] |= mask;
+        break;
+      case FrameState::Free: // axyb 0110 -> a00b (00)
+        bitmap[bitmap_index] &= ~mask;
+        break;
+      case FrameState::HoS: // axyb 0110 -> a10b (10)
+        bitmap[bitmap_index] &= ~mask;
+        mask = 0x1 << (position+1);
+        bitmap[bitmap_index] |= mask;
+        break;
+    }
+    
+}
+
+ContFramePool* ContFramePool::list_head;
+ContFramePool* ContFramePool::last_node;
 
 ContFramePool::ContFramePool(unsigned long _base_frame_no,
                              unsigned long _n_frames,
                              unsigned long _info_frame_no)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    Console::puts("ContframePool::Constructor not implemented!\n");
-    assert(false);
+    // Bitmap must fit in a single frame!
+    assert(_n_frames <= FRAME_SIZE * 8);
+    
+    base_frame_no = _base_frame_no;
+    n_frames = _n_frames;
+    n_free_frames = _n_frames;
+    info_frame_no = _info_frame_no;
+    
+    // If _info_frame_no is zero then we keep management info in the first
+    //frame, else we use the provided frame to keep management info
+    if(info_frame_no == 0) {
+        bitmap = (unsigned char *) (base_frame_no * FRAME_SIZE);
+    } else {
+        bitmap = (unsigned char *) (info_frame_no * FRAME_SIZE);
+    }
+    
+    // Everything ok. Proceed to mark all frame as free.
+    for(unsigned long fno = 0; fno < n_frames; fno++) {
+    	set_state(fno, FrameState::Free);
+    }
+    
+    // Mark the first frame as being used if it is being used
+    if(info_frame_no == 0) {
+    	set_state(0, FrameState::Used);
+        n_free_frames--;
+    }
+    
+    //Adding the current frame pool to pool list for better release handling.
+    if(ContFramePool::list_head==NULL){
+    	ContFramePool::list_head = this;
+    	ContFramePool::last_node = this;
+    } else {
+    	ContFramePool::last_node -> next_pool = this; 
+    	ContFramePool::last_node = this;
+    }
+    next_pool=NULL;
+
+    Console::puts("Frame Pool initialized\n");
 }
 
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    Console::puts("ContframePool::get_frames not implemented!\n");
-    assert(false);
+    // Any frames left to allocate?
+    assert(n_free_frames > 0);
+    
+    // Find a frame that is not being used and return its frame index.
+    // Mark that frame as being used in the bitmap.
+    unsigned long i=0, found=0, count=0;
+    for(;i<n_frames;i++){
+    	//if(bitmap[i] == 'f')
+    	if(get_state(i) == FrameState::Free)
+    		count++;
+    	else
+    		count = 0;
+    	if(count==_n_frames) {
+    		found=1;
+    		break;
+    	}
+    }
+   	
+    if(found==0){
+    	Console::puts("Continuous memory not found\n");
+    	return 0;
+    }
+    unsigned long start_frame = i-_n_frames+1;
+    set_state(start_frame, FrameState::HoS);
+    n_free_frames--;
+    for(i=start_frame+1;i<start_frame+_n_frames;i++){
+	set_state(i, FrameState::Used);
+	n_free_frames--;
+    }
+    return (start_frame + base_frame_no);
 }
 
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
                                       unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    Console::puts("ContframePool::mark_inaccessible not implemented!\n");
-    assert(false);
+    set_state(_base_frame_no, FrameState::HoS);
+    n_free_frames--;
+    
+    for(unsigned long i = _base_frame_no+1; i<_base_frame_no+_n_frames; i++){
+    	set_state(i, FrameState::Used);
+    	n_free_frames--;
+    }
+    
 }
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    Console::puts("ContframePool::release_frames not implemented!\n");
-    assert(false);
+    ContFramePool* curr_pool = ContFramePool::list_head;   
+    while(curr_pool != NULL) {
+    	if((curr_pool->base_frame_no<=_first_frame_no) && (_first_frame_no < (curr_pool->base_frame_no + curr_pool->n_frames))) {
+    		break;
+    	}
+    	curr_pool = curr_pool -> next_pool;
+    }
+    
+    if(curr_pool == NULL) {
+    	Console::puts("Pool not found\n");
+    	return;
+    }
+    
+    unsigned char * curr_pool_bitmap = curr_pool->bitmap;
+    if(curr_pool->get_state(_first_frame_no-curr_pool->base_frame_no) != FrameState::HoS) {
+    	Console::puts("First frame is not a head frame\n");
+    	return;
+    }
+    
+    curr_pool->set_state(_first_frame_no-curr_pool->base_frame_no, FrameState::Free);
+    curr_pool->n_free_frames++;
+    _first_frame_no++;
+
+    while(curr_pool->get_state(_first_frame_no-curr_pool->base_frame_no) == FrameState::Used) {
+    	curr_pool->set_state(_first_frame_no-curr_pool->base_frame_no, FrameState::Free);
+    	curr_pool->n_free_frames++;
+    	_first_frame_no++;
+    }
 }
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    Console::puts("ContframePool::need_info_frames not implemented!\n");
-    assert(false);
+	unsigned long max_bits_in_frame = 8*ContFramePool::FRAME_SIZE/2;
+	return _n_frames / max_bits_in_frame + (_n_frames % max_bits_in_frame > 0 ? 1 : 0);
 }
