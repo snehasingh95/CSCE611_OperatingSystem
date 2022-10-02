@@ -60,7 +60,8 @@ PageTable::PageTable()
 
 void PageTable::load()
 {
-   assert(false);
+   current_page_table = this;
+   write_cr3((unsigned long) current_page_table-> page_directory);
    Console::puts("Loaded page table\n");
 }
 
