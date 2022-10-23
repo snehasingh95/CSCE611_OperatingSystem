@@ -79,8 +79,6 @@ public:
      NOTE2: It may also be simpler to create the first page table *before*
      paging has been enabled.
      */
-     
-    unsigned long get_pd();
     
     void load();
     /* Makes the given page table the current table. This must be done once during
@@ -92,8 +90,8 @@ public:
      memory is accessed by addressing physical memory directly. After paging is
      enabled, memory is addressed logically. */
      
-    static unsigned long* get_PDE_logical_address(unsigned long address);
-    static unsigned long* get_PTE_logical_address(unsigned long address);
+    static unsigned long* PDE_address(unsigned long address);
+    static unsigned long* PTE_address(unsigned long address);
     
     static void handle_fault(REGS * _r);
     /* The page fault handler. */

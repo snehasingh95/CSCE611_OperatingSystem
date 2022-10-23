@@ -13,6 +13,7 @@ unsigned long PageTable::shared_size = 0;
 #define VALID_BIT 1 //bit 0 -> 1=valid, 0=absent
 #define WRITE_BIT 2 //bit 1 -> 1=read/write, 0=read-only
 #define USER_BIT 4 //bit 2 -> 1=user, 0=kernel
+#define MAKE_INVALID 0xFFFFFFFE
 #define MSB_MASK 0x80000000
 #define PTE_INDX_MASK 0x3ff
 #define PD_ADDR_MASK 0xfffff000
@@ -72,33 +73,29 @@ PageTable::PageTable()
 	Console::puts("Constructed Page Table object\n");
 }
 
-unsigned long PageTable::get_pd()
-{
-	return  (unsigned long) page_directory;
-}
-
 void PageTable::load()
 {
 	current_page_table = this;
-	write_cr3(current_page_table-> get_pd());
+	write_cr3((unsigned long)(current_page_table-> page_directory));
 	Console::puts("Loaded page table\n");
 }
 
 void PageTable::enable_paging()
 {	
-	// write_cr3(current_page_table-> get_pd());
 	paging_enabled = 1;
 	write_cr0(read_cr0() | MSB_MASK); //setting the MSB of cr3 to enable paging.
 	Console::puts("Enabled paging\n");
 }
 
-unsigned long* PageTable::get_PDE_logical_address(unsigned long address)
+unsigned long* PageTable::PDE_address(unsigned long address)
 {
+	//returns logical address of PDE
 	return (unsigned long *)(((address>>(10+12))<<2) | PD_ADDR_MASK);
 }
 
-unsigned long* PageTable::get_PTE_logical_address(unsigned long address)
+unsigned long* PageTable::PTE_address(unsigned long address)
 {
+	//returns logical address of PTE
 	return (unsigned long *)(((address>>(12))<<2) | PT_ADDR_MASK);
 }    
 
@@ -116,9 +113,6 @@ void PageTable::handle_fault(REGS * _r)
 	
 	unsigned int vm_pool_index = 0;
 	unsigned int curr_vm_pool_count = current_page_table -> n_registered_vmpools;
-	Console::puts("curr_vm_pool_count: ");
-	Console::puti(curr_vm_pool_count);
-	Console::puts("\n");
 	
 	for(;vm_pool_index<curr_vm_pool_count;vm_pool_index++)
 	{
@@ -138,13 +132,13 @@ void PageTable::handle_fault(REGS * _r)
 	
 	unsigned long pde_indx = faulty_logical_address >> (12+10) ;
 	unsigned long pte_indx = (faulty_logical_address >> 12) & PTE_INDX_MASK;
-	unsigned long* curr_pd_address = PageTable::get_PDE_logical_address(faulty_logical_address);
+	unsigned long* pde = PageTable::PDE_address(faulty_logical_address);
 	unsigned long* pte_base_index = (unsigned long*)(pde_indx << 12);  // address of the first entry in the pd.
 	
-	if(*curr_pd_address & VALID_BIT == 0) //*curr_pd_address = pde
+	if(*pde & VALID_BIT == 0) //*curr_pd_address = pde
 	{
 		// pde invalid
-		*curr_pd_address = ((PageTable::process_mem_pool->get_frames(1)) << 12 ) | WRITE_BIT | VALID_BIT;
+		*pde = ((PageTable::process_mem_pool->get_frames(1)) << 12 ) | WRITE_BIT | VALID_BIT;
 		// get_frames returns a 20 bit value, which is the index of the start frame. Hence, << 12 to make it 32 bit.
 		
 		// setting up new page table, and all its entries
@@ -163,11 +157,31 @@ void PageTable::handle_fault(REGS * _r)
 
 void PageTable::register_pool(VMPool * _vm_pool)
 {
-	assert(false);
-	Console::puts("registered VM pool\n");
+	if(current_page_table -> n_registered_vmpools == VM_POOLS_MAX)
+	{
+		Console::puts("Virtual Memory full\n");
+		assert(false);
+		return;
+	}
+	
+	current_page_table -> registered_vmpools[current_page_table -> n_registered_vmpools] = _vm_pool;
+	current_page_table -> n_registered_vmpools++;
+	
+	Console::puts("Registered VM pool\n");
 }
 
-void PageTable::free_page(unsigned long _page_no) {
-	assert(false);
+void PageTable::free_page(unsigned long _page_no) 
+{
+	unsigned long pde_indx = _page_no >> (12+10) ;
+	unsigned long pte_indx = (_page_no >> 12) & PTE_INDX_MASK;
+	unsigned long* pte = PageTable::PTE_address(_page_no);
+	
+	if(*pte & VALID_BIT)
+	{
+		ContFramePool::release_frames(*pte>>12);
+		*pte = *pte & MAKE_INVALID;
+		//Flushing the TLB
+		write_cr3((unsigned long)(current_page_table-> page_directory));
+	}
 	Console::puts("freed page\n");
 }
