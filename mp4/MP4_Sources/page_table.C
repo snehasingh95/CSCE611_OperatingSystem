@@ -130,16 +130,19 @@ void PageTable::handle_fault(REGS * _r)
 		return;
 	}
 	
+	VMPool* curr_vm_pool = current_page_table->registered_vmpools[vm_pool_index];
+	
 	unsigned long pde_indx = faulty_logical_address >> (12+10) ;
 	unsigned long pte_indx = (faulty_logical_address >> 12) & PTE_INDX_MASK;
 	unsigned long* pde = PageTable::PDE_address(faulty_logical_address);
-	unsigned long* pte_base_index = (unsigned long*)(pde_indx << 12);  // address of the first entry in the pd.
-	
-	if(*pde & VALID_BIT == 0) //*curr_pd_address = pde
+	unsigned long* pte_base_index = (unsigned long*)((pde_indx << 12) | PT_ADDR_MASK);  // address of the first entry in the pd.am
+
+	if((*pde & VALID_BIT) == 0) //*curr_pd_address = pde
 	{
 		// pde invalid
-		*pde = ((PageTable::process_mem_pool->get_frames(1)) << 12 ) | WRITE_BIT | VALID_BIT;
+		*pde = ((curr_vm_pool->_frame_pool->get_frames(1)) << 12 ) | WRITE_BIT | VALID_BIT;
 		// get_frames returns a 20 bit value, which is the index of the start frame. Hence, << 12 to make it 32 bit.
+		
 		
 		// setting up new page table, and all its entries
 		for(unsigned int pd_offset=0;pd_offset<PAGE_SIZE/4;pd_offset++)
@@ -149,7 +152,7 @@ void PageTable::handle_fault(REGS * _r)
 	}
 	
 	// setting up new frame for the given faulty_logical_address
-	unsigned long new_frame_address = PageTable::process_mem_pool->get_frames(1) << 12 ;
+	unsigned long new_frame_address = (curr_vm_pool->_frame_pool->get_frames(1)) << 12 ;
 	*(pte_base_index+pte_indx) = new_frame_address | WRITE_BIT | VALID_BIT;
 	
 	Console::puts("handled page fault\n");
