@@ -52,17 +52,28 @@
 
 Node* Scheduler::ready_queue_front;
 Node* Scheduler::ready_queue_tail;
-int Scheduler::ready_thread_count;
+int Scheduler::thread_count;
 	
 Scheduler::Scheduler() {
 	//adding dummy node to the ready queue
-	Scheduler::ready_thread_count = 0;
+	Scheduler::thread_count = 0;
 	Scheduler::ready_queue_front = Scheduler::ready_queue_tail = NULL;
 	Console::puts("Constructed Scheduler.\n");
 }
 
 void Scheduler::yield() {
-  	assert(false);
+  	if(Scheduler::ready_queue_front==NULL){
+	  	Console::puts("Ready Queue Is Empty.\n");
+	  	assert(false);
+  	}
+  	
+  	//adding current thread to end of ready queue not needed, as current thread is premempted by kernal before yielding.
+  	
+  	//dispatch to next node
+  	Node* next_ready_thread = Scheduler::ready_queue_front;
+  	Scheduler::ready_queue_front = Scheduler::ready_queue_front -> _next_node;
+  	
+  	Thread::dispatch_to(next_ready_thread -> _thread);
 }
 
 void Scheduler::resume(Thread * _thread) {
@@ -84,7 +95,7 @@ void Scheduler::add(Thread * _thread) {
 		Scheduler::ready_queue_tail -> _next_node = new_ready_thread_node;
 		Scheduler::ready_queue_tail = new_ready_thread_node;
 	}
-	Scheduler::ready_thread_count++;
+	Scheduler::thread_count++;
 	
 	//Machine::enable_interrupts();
 	

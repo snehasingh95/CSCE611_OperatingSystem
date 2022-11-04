@@ -66,7 +66,7 @@ class Scheduler {
 private:
 	static struct Node* ready_queue_front;
 	static struct Node* ready_queue_tail;
-	static int ready_thread_count;
+	static int thread_count;
   
 public:
 
