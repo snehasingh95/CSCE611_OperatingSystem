@@ -66,7 +66,7 @@ void Scheduler::yield() {
 }
 
 void Scheduler::resume(Thread * _thread) {
-  	assert(false);
+  	Scheduler::add(_thread);
 }
 
 void Scheduler::add(Thread * _thread) {
@@ -74,7 +74,7 @@ void Scheduler::add(Thread * _thread) {
 	new_ready_thread_node -> _thread = _thread;
 	new_ready_thread_node -> _next_node = NULL;
 	
-	Machine::disable_interrupts();
+	//Machine::disable_interrupts();
 	
 	if(Scheduler::ready_queue_front==NULL){
 		//only dummy node in ready queue
@@ -86,7 +86,7 @@ void Scheduler::add(Thread * _thread) {
 	}
 	Scheduler::ready_thread_count++;
 	
-	Machine::enable_interrupts();
+	//Machine::enable_interrupts();
 	
 	Console::puts("Added Thread To Ready Queue.\n");
 }
