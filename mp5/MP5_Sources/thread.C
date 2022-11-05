@@ -37,9 +37,13 @@
 
 #include "threads_low.H"
 
+#include "scheduler.H"
+
 /*--------------------------------------------------------------------------*/
 /* EXTERNS */
 /*--------------------------------------------------------------------------*/
+/* -- A POINTER TO THE SYSTEM SCHEDULER */
+extern Scheduler* SYSTEM_SCHEDULER;
 
 Thread * current_thread = 0;
 /* Pointer to the currently running thread. This is used by the scheduler,
@@ -68,91 +72,96 @@ inline void Thread::push(unsigned long _val) {
 /* LOCAL FUNCTIONS TO START/SHUTDOWN THREADS. */
 
 static void thread_shutdown() {
-    /* This function should be called when the thread returns from the thread function.
-       It terminates the thread by releasing memory and any other resources held by the thread. 
-       This is a bit complicated because the thread termination interacts with the scheduler.
-     */
+	/* This function should be called when the thread returns from the thread function.
+	It terminates the thread by releasing memory and any other resources held by the thread. 
+	This is a bit complicated because the thread termination interacts with the scheduler.
+	*/
+	
+	// assert(false);
+	
+	/* Let's not worry about it for now. 
+	This means that we should have non-terminating thread functions. 
+	*/
 
-    assert(false);
-    /* Let's not worry about it for now. 
-       This means that we should have non-terminating thread functions. 
-    */
+	//terminate and remove address space of current thread;
+	SYSTEM_SCHEDULER -> terminate(Thread::CurrentThread());
+	delete current_thread;
 }
 
 static void thread_start() {
-     /* This function is used to release the thread for execution in the ready queue. */
-    
-     /* We need to add code, but it is probably nothing more than enabling interrupts. */
+	/* This function is used to release the thread for execution in the ready queue. */
+
+	/* We need to add code, but it is probably nothing more than enabling interrupts. */
 }
 
 void Thread::setup_context(Thread_Function _tfunction){
-    /* Sets up the initial context for the given kernel-only thread. 
-       The thread is supposed the call the function _tfunction upon start.
-    */
-  
-    /* The approach and most of the code in this function are borrowed from 
-       David H. Hovemeyer <daveho@cs.umd.edu> */
- 
-    /* -- HERE WE PUSH THE ITEMS ON THE STACK THAT ARE NEEDED FOR THE
-          THREAD TO START EXECUTION AND FOR IT TO TERMINATE CORRECTLY
-          WHEN THE THREAD FUNCTION RETURNS. */
+	/* Sets up the initial context for the given kernel-only thread. 
+	The thread is supposed the call the function _tfunction upon start.
+	*/
 
-    /* ---- ARGUMENT TO THREAD FUNCTION */
-    push(0); /* At this point we don't have arguments. */
+	/* The approach and most of the code in this function are borrowed from 
+	David H. Hovemeyer <daveho@cs.umd.edu> */
 
-    /* ---- ADDRESS OF SHUTDOWN FUNCTION */
-    push((unsigned long) &thread_shutdown);
-    /* The thread_shutdown function should be called when the thread function 
-       returns. */
+	/* -- HERE WE PUSH THE ITEMS ON THE STACK THAT ARE NEEDED FOR THE
+	  THREAD TO START EXECUTION AND FOR IT TO TERMINATE CORRECTLY
+	  WHEN THE THREAD FUNCTION RETURNS. */
 
-    /* Push the address of the thread function. */
-    push((unsigned long) _tfunction);
+	/* ---- ARGUMENT TO THREAD FUNCTION */
+	push(0); /* At this point we don't have arguments. */
 
-    /* -- NOW WE NEED TO MAKE THE REST OF THE STACK LOOK LIKE AFTER AN EXCEPTION. */
-    /*
-     * The EFLAGS register will have all bits clear.
-     * The important constraint is that we want to have the IF
-     * bit clear, so that interrupts are disabled when the
-     * thread starts.
-     */
-    /* ---- EFLAGS */
-    push(0);
-    /* Clear the IF bit to disable interrupts when thread starts. */
+	/* ---- ADDRESS OF SHUTDOWN FUNCTION */
+	push((unsigned long) &thread_shutdown);
+	/* The thread_shutdown function should be called when the thread function 
+	returns. */
 
-    /* ---- CS and EIP REGISTERS */
-    push(Machine::KERNEL_CS);
-    push((unsigned long) &thread_start);
-    /* In the instruction pointer (EIP) we store address of the 
-       function that will kick-start the thread. */
+	/* Push the address of the thread function. */
+	push((unsigned long) _tfunction);
 
-    /* Push fake error code and interrupt number. */
-    push(0);
-    push(0);
+	/* -- NOW WE NEED TO MAKE THE REST OF THE STACK LOOK LIKE AFTER AN EXCEPTION. */
+	/*
+	* The EFLAGS register will have all bits clear.
+	* The important constraint is that we want to have the IF
+	* bit clear, so that interrupts are disabled when the
+	* thread starts.
+	*/
+	/* ---- EFLAGS */
+	push(0);
+	/* Clear the IF bit to disable interrupts when thread starts. */
 
-    /* Push initial values for general-purpose registers. */
-    push(0);  /* eax */
-    push(0);  /* ecx */
-    push(0);  /* edx */
-    push(0);  /* ebx */
-    push(0);  /* esp */
-    push(0);  /* ebp */
-    push(0);  /* esi */
-    push(0);  /* edi */
+	/* ---- CS and EIP REGISTERS */
+	push(Machine::KERNEL_CS);
+	push((unsigned long) &thread_start);
+	/* In the instruction pointer (EIP) we store address of the 
+	function that will kick-start the thread. */
 
-    /*
-     * Push values for saved segment registers.
-     * Only the ds and es registers will contain valid selectors.
-     * The fs and gs registers are not used by any instruction
-     * generated by gcc.
-     */
-    push(Machine::KERNEL_DS);  /* ds */
-    push(Machine::KERNEL_DS);  /* es */
-    push(0);  /* fs */
-    push(0);  /* gs */
+	/* Push fake error code and interrupt number. */
+	push(0);
+	push(0);
 
-    Console::puts("esp = "); Console::putui((unsigned int)esp); Console::puts("\n");
+	/* Push initial values for general-purpose registers. */
+	push(0);  /* eax */
+	push(0);  /* ecx */
+	push(0);  /* edx */
+	push(0);  /* ebx */
+	push(0);  /* esp */
+	push(0);  /* ebp */
+	push(0);  /* esi */
+	push(0);  /* edi */
 
-    Console::puts("done\n");
+	/*
+	* Push values for saved segment registers.
+	* Only the ds and es registers will contain valid selectors.
+	* The fs and gs registers are not used by any instruction
+	* generated by gcc.
+	*/
+	push(Machine::KERNEL_DS);  /* ds */
+	push(Machine::KERNEL_DS);  /* es */
+	push(0);  /* fs */
+	push(0);  /* gs */
+
+	Console::puts("esp = "); Console::putui((unsigned int)esp); Console::puts("\n");
+
+	Console::puts("done\n");
 }
 
 /*--------------------------------------------------------------------------*/
@@ -164,28 +173,28 @@ Thread::Thread(Thread_Function _tf, char * _stack, unsigned int _stack_size) {
    (The dispatcher is implemented in file "thread_scheduler".) 
 */
 
-    /* -- INITIALIZE THREAD */
+	/* -- INITIALIZE THREAD */
 
-    /* ---- THREAD ID */
-   
-    thread_id = nextFreePid++;
+	/* ---- THREAD ID */
 
-    /* ---- STACK POINTER */
+	thread_id = nextFreePid++;
 
-    esp = (char*)((unsigned int)_stack + _stack_size);
-    /* RECALL: The stack starts at the end of the reserved stack memory area. */
+	/* ---- STACK POINTER */
 
-    stack = _stack;
-    stack_size = _stack_size;
-    
-    /* -- INITIALIZE THE STACK OF THE THREAD */
+	esp = (char*)((unsigned int)_stack + _stack_size);
+	/* RECALL: The stack starts at the end of the reserved stack memory area. */
 
-    setup_context(_tf);
+	stack = _stack;
+	stack_size = _stack_size;
+
+	/* -- INITIALIZE THE STACK OF THE THREAD */
+
+	setup_context(_tf);
 
 }
 
 int Thread::ThreadId() {
-    return thread_id;
+	return thread_id;
 }
 
 void Thread::dispatch_to(Thread * _thread) {
@@ -197,15 +206,15 @@ void Thread::dispatch_to(Thread * _thread) {
          the first thread.
 */
 
-    /* The value of 'current_thread' is modified inside 'threads_low_switch_to()'. */
+	/* The value of 'current_thread' is modified inside 'threads_low_switch_to()'. */
 
-    threads_low_switch_to(_thread);
+	threads_low_switch_to(_thread);
 
-    /* The call does not return until after the thread is context-switched back in. */
+	/* The call does not return until after the thread is context-switched back in. */
 }
        
 
 Thread * Thread::CurrentThread() {
 /* Return the currently running thread. */
-    return current_thread;
+	return current_thread;
 }

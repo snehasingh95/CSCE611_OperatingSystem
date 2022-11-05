@@ -71,6 +71,9 @@ void Scheduler::yield() {
   	
   	//dispatch to next node
   	Node* next_ready_thread = Scheduler::ready_queue_front;
+  	if(Scheduler::ready_queue_front == Scheduler::ready_queue_tail){
+  		Scheduler::ready_queue_tail = NULL;
+  	}
   	Scheduler::ready_queue_front = Scheduler::ready_queue_front -> _next_node;
   	
   	Thread::dispatch_to(next_ready_thread -> _thread);
@@ -103,5 +106,45 @@ void Scheduler::add(Thread * _thread) {
 }
 
 void Scheduler::terminate(Thread * _thread) {
-  	assert(false);
+	//remove the _thread from the ready queue, in case the thread sucides, before thread shutdown.
+	
+	//Machine::disable_interrupts();
+	if(Scheduler::ready_queue_front==NULL){
+	  	return;
+  	}
+
+  	Node* node = Scheduler::ready_queue_front;
+
+  	if(Scheduler::ready_queue_front -> _thread -> ThreadId() == _thread -> ThreadId()){
+  		Scheduler::ready_queue_front = Scheduler::ready_queue_front -> _next_node;
+  		delete node;
+  		Scheduler::thread_count--;
+  		Scheduler::yield();
+	  	return;
+  	}
+  	
+  	while(node->_next_node!=NULL){
+  		Node* nextNode = node -> _next_node;
+  		if(nextNode -> _thread -> ThreadId() == _thread -> ThreadId()){
+  			node -> _next_node = nextNode -> _next_node;
+  			delete nextNode;
+  			break;
+  		}
+  		node = nextNode;
+  	}
+	
+	//Machine::enable_interrupts();
+	Scheduler::thread_count--;
+	Scheduler::yield();
 }
+
+/*void Scheduler::printReadyQueue(){
+	Console::puts("Ready Queue is: ");
+	Node* node = Scheduler::ready_queue_front;
+	while(node!=NULL){
+		Console::puti(node->_thread->ThreadId());
+		Console::puts("->");
+		node = node -> _next_node;
+	}
+	Console::puts("\n");
+}*/
