@@ -52,6 +52,7 @@
 #include "interrupts.H"
 
 #include "simple_timer.H"    /* TIMER MANAGEMENT  */
+#include "eoq_timer.H"
 
 #include "frame_pool.H"      /* MEMORY MANAGEMENT */
 #include "mem_pool.H"
@@ -152,7 +153,7 @@ void fun1() {
         for (int i = 0; i < 10; i++) {
             Console::puts("FUN 1: TICK ["); Console::puti(i); Console::puts("]\n");
         }
-        pass_on_CPU(thread2);
+        //pass_on_CPU(thread2);
     }
 }
 
@@ -171,7 +172,7 @@ void fun2() {
         for (int i = 0; i < 10; i++) {
             Console::puts("FUN 2: TICK ["); Console::puti(i); Console::puts("]\n");
         }
-        pass_on_CPU(thread3);
+        //pass_on_CPU(thread3);
     }
 }
 
@@ -184,7 +185,7 @@ void fun3() {
         for (int i = 0; i < 10; i++) {
 	    Console::puts("FUN 3: TICK ["); Console::puti(i); Console::puts("]\n");
         }
-        pass_on_CPU(thread4);
+        //pass_on_CPU(thread4);
     }
 }
 
@@ -197,7 +198,7 @@ void fun4() {
         for (int i = 0; i < 10; i++) {
 	    Console::puts("FUN 4: TICK ["); Console::puti(i); Console::puts("]\n");
         }
-        pass_on_CPU(thread1);
+        //pass_on_CPU(thread1);
     }
 }
 
@@ -251,7 +252,8 @@ int main() {
                  we enable interrupts correctly. If we forget to do it,
                  the timer "dies". */
 
-    SimpleTimer timer(100); /* timer ticks every 10ms. */
+    //SimpleTimer timer(100);
+    EOQTimer timer(100, 5); /* timer ticks every 10ms. */
     InterruptHandler::register_handler(0, &timer);
     /* The Timer is implemented as an interrupt handler. */
 
@@ -270,7 +272,7 @@ int main() {
 
     /* -- ENABLE INTERRUPTS -- */
 
-    Machine::enable_interrupts();
+    //Machine::enable_interrupts();
 
     /* -- MOST OF WHAT WE NEED IS SETUP. THE KERNEL CAN START. */
 

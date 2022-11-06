@@ -40,6 +40,7 @@ SimpleTimer::SimpleTimer(int _hz) {
                    In this way, a 16-bit counter wraps
                    around every hour.                    */
   set_frequency(_hz);
+  Console::puts("SimpleTimer constructed\n");
 
 }
 

@@ -128,8 +128,8 @@ void InterruptHandler::dispatch_interrupt(REGS * _r) {
   }
   else {
     /* -- HANDLE THE INTERRUPT */
-    handler->handle_interrupt(_r);
-  }
+    //handler->handle_interrupt(_r);
+  //}
 
   /* This is an interrupt that was raised by the interrupt controller. We need 
        to send and end-of-interrupt (EOI) signal to the controller after the 
@@ -144,6 +144,8 @@ void InterruptHandler::dispatch_interrupt(REGS * _r) {
 
   /* Send an EOI message to the master interrupt controller. */
   Machine::outportb(0x20, 0x20);
+  handler->handle_interrupt(_r);
+  }
     
 }
 

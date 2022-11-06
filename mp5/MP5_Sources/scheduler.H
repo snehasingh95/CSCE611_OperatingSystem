@@ -99,7 +99,7 @@ public:
 	of the thread. 
 	Graciously handle the case where the thread wants to terminate itself.*/
 	
-	//virtual void printReadyQueue();
+	virtual void printReadyQueue();
   
 };
 

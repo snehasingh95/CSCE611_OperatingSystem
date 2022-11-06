@@ -223,3 +223,8 @@ Thread * Thread::CurrentThread() {
 /* Return the currently running thread. */
 	return current_thread;
 }
+
+void Thread::yield_thread(){
+	SYSTEM_SCHEDULER -> resume(Thread::CurrentThread());
+	SYSTEM_SCHEDULER -> yield();
+}

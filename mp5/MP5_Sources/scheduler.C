@@ -76,9 +76,9 @@ void Scheduler::yield() {
   	}
   	Scheduler::ready_queue_front = Scheduler::ready_queue_front -> _next_node;
   	
+  	//Scheduler::printReadyQueue();
+  	Console::puts("Yielding To Next Thread In Ready Queue.\n");
   	Thread::dispatch_to(next_ready_thread -> _thread);
-  	
-  	Console::puts("Thread Yielded To Next Thread In Ready Queue.\n");
 }
 
 void Scheduler::resume(Thread * _thread) {
@@ -112,7 +112,8 @@ void Scheduler::add(Thread * _thread) {
 		Machine::enable_interrupts();
 		Console::puts("Enabled Interrupts After critical section.\n");
 	}
-	
+
+	//Scheduler::printReadyQueue();
 	Console::puts("Added Thread To Ready Queue.\n");
 }
 
@@ -124,7 +125,7 @@ void Scheduler::terminate(Thread * _thread) {
   	}
   	
   	bool interrupts_enabled = Machine::interrupts_enabled();
-  	Console::puts("Initial Interrupt State: ");Console::puti(interrupts_enabled);Console::puts("\n");
+  	//Console::puts("Initial Interrupt State: ");Console::puti(interrupts_enabled);Console::puts("\n");
 	if(interrupts_enabled){
 		Console::puts("Disabled Interrupts Before Critical Section.\n");
 		Machine::disable_interrupts();
@@ -154,12 +155,12 @@ void Scheduler::terminate(Thread * _thread) {
 	}
 	
 	Scheduler::thread_count--;
-	Scheduler::yield();
-	
+	//Scheduler::printReadyQueue();
 	Console::puts("Thread Terminated.\n");
+	Scheduler::yield();
 }
 
-/*void Scheduler::printReadyQueue(){
+void Scheduler::printReadyQueue(){
 	Console::puts("Ready Queue is: ");
 	Node* node = Scheduler::ready_queue_front;
 	while(node!=NULL){
@@ -168,4 +169,4 @@ void Scheduler::terminate(Thread * _thread) {
 		node = node -> _next_node;
 	}
 	Console::puts("\n");
-}*/
+}
