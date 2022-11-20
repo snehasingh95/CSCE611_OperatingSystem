@@ -19,7 +19,7 @@
 
 /* -- COMMENT/UNCOMMENT THE FOLLOWING LINE TO EXCLUDE/INCLUDE SCHEDULER CODE */
 
-//#define _USES_SCHEDULER_
+#define _USES_SCHEDULER_
 /* This macro is defined when we want to force the code below to use 
    a scheduler.
    Otherwise, no scheduler is used, and the threads pass control to each 
@@ -52,6 +52,7 @@
 #include "scheduler.H"      /* WE WILL NEED A SCHEDULER WITH BlockingDisk */
 #endif
 
+#include "blocking_disk.H"
 #include "simple_disk.H"    /* DISK DEVICE */
                             /* YOU MAY NEED TO INCLUDE blocking_disk.H
 /*--------------------------------------------------------------------------*/
@@ -79,7 +80,7 @@ void * operator new[] (size_t size) {
 }
 
 //replace the operator "delete"
-void operator delete (void * p) {
+void operator delete (void * p, size_t s) {
     MEMORY_POOL->release((unsigned long)p);
 }
 
@@ -104,7 +105,7 @@ Scheduler * SYSTEM_SCHEDULER;
 /*--------------------------------------------------------------------------*/
 
 /* -- A POINTER TO THE SYSTEM DISK */
-SimpleDisk * SYSTEM_DISK;
+BlockingDisk* SYSTEM_DISK;
 
 #define SYSTEM_DISK_SIZE (10 MB)
 
@@ -289,8 +290,16 @@ int main() {
 #endif
 
     /* -- DISK DEVICE -- */
+    
+    SYSTEM_DISK = new BlockingDisk(DISK_ID::MASTER, SYSTEM_DISK_SIZE);
+    
+#ifdef _USES_SCHEDULER_
 
-    SYSTEM_DISK = new SimpleDisk(DISK_ID::MASTER, SYSTEM_DISK_SIZE);
+    /* -- SCHEDULER -- IF YOU HAVE ONE -- */
+  
+    //SYSTEM_SCHEDULER->add_blocking_disk(SYSTEM_DISK);
+
+#endif
    
     /* NOTE: The timer chip starts periodically firing as 
              soon as we enable interrupts.
