@@ -176,7 +176,7 @@ void fun2() {
        Console::puts("FUN 2 IN ITERATION["); Console::puti(j); Console::puts("]\n");
 
        /* -- Read */
-       Console::puts("Reading a block from disk...\n");
+       Console::puts("FUN 2: Reading a block from disk...\n");
        SYSTEM_DISK->read(read_block, buf);
 
        /* -- Display */
@@ -184,7 +184,7 @@ void fun2() {
            Console::putch(buf[i]);
        }
 
-       Console::puts("Writing a block to disk...\n");
+       Console::puts("FUN 2: Writing a block to disk...\n");
        SYSTEM_DISK->write(write_block, buf); 
 
        /* -- Move to next block */
@@ -201,14 +201,31 @@ void fun3() {
 
     Console::puts("FUN 3 INVOKED!\n");
 
-     for(int j = 0;; j++) {
+    unsigned char buf[DISK_BLOCK_SIZE];
+    int  read_block  = 1;
+    int  write_block = 0;
 
-       Console::puts("FUN 3 IN BURST["); Console::puti(j); Console::puts("]\n");
+    for(int j = 0;; j++) {
 
-       for (int i = 0; i < 10; i++) {
-           Console::puts("FUN 3: TICK ["); Console::puti(i); Console::puts("]\n");
+       Console::puts("FUN 3 IN ITERATION["); Console::puti(j); Console::puts("]\n");
+
+       /* -- Read */
+       Console::puts("FUN 3: Reading a block from disk...\n");
+       SYSTEM_DISK->read(read_block, buf);
+
+       /* -- Display */
+       for (int i = 0; i < DISK_BLOCK_SIZE; i++) {
+           Console::putch(buf[i]);
        }
-    
+
+       Console::puts("FUN 3: Writing a block to disk...\n");
+       SYSTEM_DISK->write(write_block, buf); 
+
+       /* -- Move to next block */
+       write_block = read_block;
+       read_block  = (read_block + 1) % 10;
+
+       /* -- Give up the CPU */
        pass_on_CPU(thread4);
     }
 }
@@ -297,7 +314,7 @@ int main() {
 
     /* -- SCHEDULER -- IF YOU HAVE ONE -- */
   
-    //SYSTEM_SCHEDULER->add_blocking_disk(SYSTEM_DISK);
+    SYSTEM_SCHEDULER->add_blocking_disk(SYSTEM_DISK);
 
 #endif
    

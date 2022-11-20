@@ -20,6 +20,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "thread.H"
+#include "queue.H"
 #include "blocking_disk.H"
 
 /*--------------------------------------------------------------------------*/
@@ -55,19 +56,11 @@
 /* SCHEDULER */
 /*--------------------------------------------------------------------------*/
 
-
-struct Node {
-	Thread* _thread;
-	struct Node* _next_node;
-};
-
 class Scheduler {
 
-  /* The scheduler may need private members... */
+/* The scheduler may need private members... */
 private:
-	static struct Node* ready_queue_front;
-	static struct Node* ready_queue_tail;
-	static int thread_count;
+	static Queue* ready_queue;
 	static BlockingDisk* blocking_disk;
   
 public:
@@ -102,8 +95,6 @@ public:
 	Graciously handle the case where the thread wants to terminate itself.*/
 	
 	virtual void add_blocking_disk(BlockingDisk* blocking_disk);
-	
-	virtual void printReadyQueue();
   
 };
 
