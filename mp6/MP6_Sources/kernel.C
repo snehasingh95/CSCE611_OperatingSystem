@@ -181,7 +181,7 @@ void fun2() {
 
        /* -- Display */
        for (int i = 0; i < DISK_BLOCK_SIZE; i++) {
-           Console::putch(buf[i]);
+           Console::puti(buf[i]);
        }
 
        Console::puts("FUN 2: Writing a block to disk...\n");
@@ -215,7 +215,7 @@ void fun3() {
 
        /* -- Display */
        for (int i = 0; i < DISK_BLOCK_SIZE; i++) {
-           Console::putch(buf[i]);
+           Console::puti(buf[i]);
        }
 
        Console::puts("FUN 3: Writing a block to disk...\n");
