@@ -138,11 +138,44 @@ Inode * FileSystem::LookupFile(int _file_id) {
 }
 
 bool FileSystem::CreateFile(int _file_id) {
-    Console::puts("creating file with id:"); Console::puti(_file_id); Console::puts("\n");
-    /* Here you check if the file exists already. If so, throw an error.
-       Then get yourself a free inode and initialize all the data needed for the
-       new file. After this function there will be a new file on disk. */
-    assert(false);
+	Console::puts("creating file with id: "); Console::puti(_file_id); Console::puts("\n");
+	/* Here you check if the file exists already. If so, throw an error.
+	Then get yourself a free inode and initialize all the data needed for the
+	new file. After this function there will be a new file on disk. */
+
+	unsigned int i;
+	for(i=0;i<inode_cntr;i++){
+		if(inodes[i].id== _file_id){
+			Console::puts("Error: File with id: ");Console::puti(_file_id); Console::puts(" already exists.\n");
+			assert(false);
+		}	
+	}
+	
+	
+	unsigned int free_inode_indx = -1;
+	for(i=0;i<MAX_INODES;i++){
+		if(inodes[i].inode_is_free){
+			free_inode_indx = i;
+			break;
+		}	
+	}
+	
+	unsigned int free_blk_indx = -1;
+	for(i=0;i<free_blk_cnt;i++){
+		if(free_blocks[i] == FREE_BLK_REP){
+			free_blk_indx = i;
+			break;
+		}	
+	}
+	
+	assert((free_inode_indx!=-1) && (free_blk_indx!=-1));
+	inodes[free_inode_indx].inode_is_free = false;
+	inodes[free_inode_indx].fs = this;
+	inodes[free_inode_indx].id = _file_id;
+	inodes[free_inode_indx].blk_number = free_blk_indx;
+	free_blocks[free_inode_indx] = USED_BLK_REP;
+	
+	return true;
 }
 
 bool FileSystem::DeleteFile(int _file_id) {
