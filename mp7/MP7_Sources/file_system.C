@@ -175,12 +175,36 @@ bool FileSystem::CreateFile(int _file_id) {
 	inodes[free_inode_indx].blk_number = free_blk_indx;
 	free_blocks[free_inode_indx] = USED_BLK_REP;
 	
+	Console::puts("File created successfully");
+	
 	return true;
 }
 
 bool FileSystem::DeleteFile(int _file_id) {
-    Console::puts("deleting file with id:"); Console::puti(_file_id); Console::puts("\n");
-    /* First, check if the file exists. If not, throw an error. 
-       Then free all blocks that belong to the file and delete/invalidate 
-       (depending on your implementation of the inode list) the inode. */
+	Console::puts("deleting file with id:"); Console::puti(_file_id); Console::puts("\n");
+	/* First, check if the file exists. If not, throw an error. 
+	Then free all blocks that belong to the file and delete/invalidate 
+	(depending on your implementation of the inode list) the inode. */
+	
+	bool file_exists = false;
+	unsigned int indx=0;
+	
+	while(indx<MAX_INODES){
+		if(inodes[indx].id ==_file_id){
+			file_exists = true;
+			break; 
+		}
+		indx++;
+	}
+	
+	assert(file_exists);
+	
+	int blk_number = inodes[indx].blk_number;
+	free_blocks[blk_number] = FREE_BLK_REP;
+	
+	inodes[indx].inode_is_free = true;
+	inodes[indx].fle_size = 0;
+	
+	Console::puts("File created successfully");
+	return true;
 }
