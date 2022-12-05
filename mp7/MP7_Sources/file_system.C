@@ -132,9 +132,16 @@ bool FileSystem::Format(SimpleDisk * _disk, unsigned int _size) { // static!
 }
 
 Inode * FileSystem::LookupFile(int _file_id) {
-    Console::puts("looking up file with id = "); Console::puti(_file_id); Console::puts("\n");
-    /* Here you go through the inode list to find the file. */
-    assert(false);
+	Console::puts("looking up file with id = "); Console::puti(_file_id); Console::puts("\n");
+	/* Here you go through the inode list to find the file. */
+	unsigned int i;
+	for(i=0;i<inode_cntr;i++){
+		if(inodes[i].id== _file_id){
+			return &inodes[i];
+		}	
+	}
+	Console::puts("File with id = "); Console::puti(_file_id); Console::puts(" not found\n");
+	return NULL;
 }
 
 bool FileSystem::CreateFile(int _file_id) {
