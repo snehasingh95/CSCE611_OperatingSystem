@@ -73,41 +73,62 @@ FileSystem::~FileSystem() {
 
 
 bool FileSystem::Mount(SimpleDisk * _disk) {
-    Console::puts("mounting file system from disk\n");
+	Console::puts("mounting file system from disk\n");
 
-    /* Here you read the inode list and the free list into memory */
-    
-    disk = _disk;
-    unsigned char* tmp_inode_ref;
-    
-    _disk->read(BITMAP_BLK_NUMBER, free_blocks);
-    _disk->read(INODE_BLK_NUMBER, tmp_inode_ref);
-    
-    inodes = (Inode *) tmp_inode_ref;
-    
-    // finding a free inode
-    inode_cntr = 0;
-    unsigned int i = 0;
-    while(i<MAX_INODES){
-    	if(!inodes[i].inode_is_free){
-    		inode_cntr++;
-    	}
-    	i++;
-    }
-    
-    free_blk_cnt = SimpleDisk::BLOCK_SIZE / sizeof(unsigned char);
-    
-    Console::puts("Mounted file system from disk\n");
-    
-    return true;
+	/* Here you read the inode list and the free list into memory */
+
+	disk = _disk;
+	unsigned char* tmp_inode_ref;
+
+	_disk->read(BITMAP_BLK_NUMBER, free_blocks);
+	_disk->read(INODE_BLK_NUMBER, tmp_inode_ref);
+
+	inodes = (Inode *) tmp_inode_ref;
+
+	// finding a free inode
+	inode_cntr = 0;
+	unsigned int i = 0;
+	while(i<MAX_INODES){
+		if(!inodes[i].inode_is_free){
+			inode_cntr++;
+		}
+		i++;
+	}
+
+	free_blk_cnt = SimpleDisk::BLOCK_SIZE / sizeof(unsigned char);
+
+	Console::puts("Mounted file system from disk\n");
+
+	return true;
 }
 
 bool FileSystem::Format(SimpleDisk * _disk, unsigned int _size) { // static!
-    Console::puts("formatting disk\n");
-    /* Here you populate the disk with an initialized (probably empty) inode list
-       and a free list. Make sure that blocks used for the inodes and for the free list
-       are marked as used, otherwise they may get overwritten. */
-    assert(false);
+	Console::puts("formatting disk\n");
+	/* Here you populate the disk with an initialized (probably empty) inode list
+	and a free list. Make sure that blocks used for the inodes and for the free list
+	are marked as used, otherwise they may get overwritten. */
+
+	unsigned int n_free_blks  = _size/SimpleDisk::BLOCK_SIZE;
+	unsigned char* free_blks_arr = new unsigned char[n_free_blks];
+	
+	// reserved blocks
+	free_blks_arr[0] = free_blks_arr[1] = USED_BLK_REP;
+	
+	//freeing blocks
+	unsigned int i = 2;
+	while(i<n_free_blks){
+		free_blks_arr[i] = USED_BLK_REP;
+		i++;
+	}
+	
+	_disk->write(BITMAP_BLK_NUMBER, free_blks_arr);
+	
+	Inode* tmp_inodes_ref = new Inode[MAX_INODES];
+	unsigned char* tmp_inode_ref = (unsigned char*) tmp_inodes_ref;
+	_disk->write(INODE_BLK_NUMBER,tmp_inode_ref);
+	
+	Console::puts("formatted disk\n");
+	return true;
 }
 
 Inode * FileSystem::LookupFile(int _file_id) {
