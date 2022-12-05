@@ -11,8 +11,10 @@
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
-
-    /* -- (none) -- */
+#define FREE_BLK_REP 'F'
+#define USED_BLK_REP 'U'
+#define INODE_BLK_NUMBER 1
+#define BITMAP_BLK_NUMBER 0
 
 /*--------------------------------------------------------------------------*/
 /* INCLUDES */
@@ -28,7 +30,14 @@
 
 /* You may need to add a few functions, for example to help read and store 
    inodes from and to disk. */
-
+   
+Inode::Inode(){
+	fs = NULL;
+	long id = -1;
+	//unsigned int blk_number;
+	bool inode_is_free = true;
+	int fle_size = 0;
+}
 /*--------------------------------------------------------------------------*/
 /* CLASS FileSystem */
 /*--------------------------------------------------------------------------*/
@@ -38,8 +47,17 @@
 /*--------------------------------------------------------------------------*/
 
 FileSystem::FileSystem() {
-    Console::puts("In file system constructor.\n");
-    assert(false);
+	Console::puts("In file system constructor.\n");
+	
+	disk = NULL;
+	size = 0;
+	free_blk_cnt = SimpleDisk::BLOCK_SIZE / sizeof(unsigned char);
+	unsigned int inode_cntr = 0;
+	
+	unsigned char *free_blocks = new unsigned char[free_blk_cnt];
+	inodes = new Inode[MAX_INODES];
+	
+	Console::puts("FileSystem constructor initialized.\n");
 }
 
 FileSystem::~FileSystem() {
@@ -59,7 +77,29 @@ bool FileSystem::Mount(SimpleDisk * _disk) {
 
     /* Here you read the inode list and the free list into memory */
     
-    assert(false);
+    disk = _disk;
+    unsigned char* tmp_inode_ref;
+    
+    _disk->read(BITMAP_BLK_NUMBER, free_blocks);
+    _disk->read(INODE_BLK_NUMBER, tmp_inode_ref);
+    
+    inodes = (Inode *) tmp_inode_ref;
+    
+    // finding a free inode
+    inode_cntr = 0;
+    unsigned int i = 0;
+    while(i<MAX_INODES){
+    	if(!inodes[i].inode_is_free){
+    		inode_cntr++;
+    	}
+    	i++;
+    }
+    
+    free_blk_cnt = SimpleDisk::BLOCK_SIZE / sizeof(unsigned char);
+    
+    Console::puts("Mounted file system from disk\n");
+    
+    return true;
 }
 
 bool FileSystem::Format(SimpleDisk * _disk, unsigned int _size) { // static!
