@@ -61,9 +61,14 @@ FileSystem::FileSystem() {
 }
 
 FileSystem::~FileSystem() {
-    Console::puts("unmounting file system\n");
-    /* Make sure that the inode list and the free list are saved. */
-    assert(false);
+	Console::puts("unmounting file system\n");
+	/* Make sure that the inode list and the free list are saved. */
+
+	disk->write(BITMAP_BLK_NUMBER, free_blocks);
+	unsigned char* tmp_inode_ref = (unsigned char*) inodes;
+	disk->read(INODE_BLK_NUMBER, tmp_inode_ref);
+
+	Console::puts("unmounted file system\n");
 }
 
 
@@ -80,8 +85,8 @@ bool FileSystem::Mount(SimpleDisk * _disk) {
 	disk = _disk;
 	unsigned char* tmp_inode_ref;
 
-	_disk->read(BITMAP_BLK_NUMBER, free_blocks);
-	_disk->read(INODE_BLK_NUMBER, tmp_inode_ref);
+	disk->read(BITMAP_BLK_NUMBER, free_blocks);
+	disk->read(INODE_BLK_NUMBER, tmp_inode_ref);
 
 	inodes = (Inode *) tmp_inode_ref;
 
