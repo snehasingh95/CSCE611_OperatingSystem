@@ -81,12 +81,6 @@ class FileSystem
 private:
 	/* -- DEFINE YOUR FILE SYSTEM DATA STRUCTURES HERE. */
 	unsigned int size;
-	
-	/* Just as an example, you can store MAX_INODES in a single INODES block */
-
-	Inode *inodes; // the inode list
-	/* The inode list */
-
 	unsigned int free_blk_cnt;
 	unsigned int inode_cntr;
 	unsigned char *free_blocks;
@@ -105,6 +99,10 @@ public:
 
 	SimpleDisk *disk;
 	static constexpr unsigned int MAX_INODES = SimpleDisk::BLOCK_SIZE / sizeof(Inode);
+	/* Just as an example, you can store MAX_INODES in a single INODES block */
+
+	Inode *inodes; // the inode list
+	/* The inode list */
 	
 	FileSystem();
 	/* Just initializes local data structures. Does not connect to disk yet. */

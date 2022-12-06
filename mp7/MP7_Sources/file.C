@@ -37,7 +37,7 @@ File::File(FileSystem *_fs, int _id) {
 	while(i<fle_system->MAX_INODES){
 		if(fle_system->inodes[i].id==fle_identifier){
 			inode_indx = i;
-			blk_no = fle_system->inodes[i].block_no;
+			blk_number = fle_system->inodes[i].blk_number;
 			fle_size = fle_system->inodes[i].fle_size;
 			fle_blk_found = true;
 			break;
@@ -49,9 +49,16 @@ File::File(FileSystem *_fs, int _id) {
 }
 
 File::~File() {
-    Console::puts("Closing file.\n");
-    /* Make sure that you write any cached data to disk. */
-    /* Also make sure that the inode in the inode list is updated. */
+	Console::puts("Closing file.\n");
+	/* Make sure that you write any cached data to disk. */
+	/* Also make sure that the inode in the inode list is updated. */
+
+	fle_system->disk->write(blk_number, block_cache);
+	fle_system->inodes[inode_indx].fle_size = fle_size;
+
+	Inode* tmp_inodes_ref = fle_system->inodes;
+	unsigned char* tmp_inode_ref = (unsigned char*) tmp_inodes_ref;
+	fle_system->disk->write(1,tmp_inode_ref);
 }
 
 /*--------------------------------------------------------------------------*/

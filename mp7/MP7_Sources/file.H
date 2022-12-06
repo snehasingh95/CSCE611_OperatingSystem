@@ -48,7 +48,7 @@ private:
 	
 	FileSystem* fle_system;
 	int fle_identifier;
-	unsigned int blk_no;
+	unsigned int blk_number;
 	unsigned int inode_indx;
 	unsigned int fle_size;
 	unsigned int curr_pos;
