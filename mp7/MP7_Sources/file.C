@@ -27,8 +27,25 @@
 /*--------------------------------------------------------------------------*/
 
 File::File(FileSystem *_fs, int _id) {
-    Console::puts("Opening file.\n");
-    assert(false);
+	Console::puts("Opening file.\n");
+	fle_system = _fs;
+	fle_identifier = _id;
+	curr_pos = 0;
+	
+	bool fle_blk_found = false;
+	unsigned int i=0;
+	while(i<fle_system->MAX_INODES){
+		if(fle_system->inodes[i].id==fle_identifier){
+			inode_indx = i;
+			blk_no = fle_system->inodes[i].block_no;
+			fle_size = fle_system->inodes[i].fle_size;
+			fle_blk_found = true;
+			break;
+		}
+		i++;
+	}
+	
+	assert(fle_blk_found);
 }
 
 File::~File() {
