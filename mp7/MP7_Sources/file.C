@@ -97,10 +97,10 @@ int File::Write(unsigned int _n, const char *_buf) {
 
 void File::Reset() {
     Console::puts("resetting file\n");
-    assert(false);
+    curr_pos=0;
 }
 
 bool File::EoF() {
     Console::puts("checking for EoF\n");
-    assert(false);
+    return (curr_pos<fle_size);
 }
