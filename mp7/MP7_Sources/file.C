@@ -66,13 +66,33 @@ File::~File() {
 /*--------------------------------------------------------------------------*/
 
 int File::Read(unsigned int _n, char *_buf) {
-    Console::puts("reading from file\n");
-    assert(false);
+	Console::puts("reading from file\n");
+	int char_cnt = 0;
+	for(int indx = curr_pos; indx<fle_size;indx++){
+		if(char_cnt==_n)
+			break;
+		_buf[char_cnt++] = block_cache[indx];
+	}
+
+	Console::puts("reading from file complete\n");
+	return char_cnt;
 }
 
 int File::Write(unsigned int _n, const char *_buf) {
-    Console::puts("writing to file\n");
-    assert(false);
+	Console::puts("writing to file\n");
+	int char_cnt = 0;
+	int end_indx = curr_pos+_n;
+	while(curr_pos<end_indx){
+		if(curr_pos==SimpleDisk::BLOCK_SIZE){
+			Console::puts("EOF reached while writing\n");
+			break;
+		}
+		block_cache[curr_pos++]=_buf[char_cnt++];
+		fle_size++;
+	}
+
+	Console::puts("writing to file complete\n");
+	return char_cnt;
 }
 
 void File::Reset() {
