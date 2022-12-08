@@ -27,7 +27,7 @@
 /*--------------------------------------------------------------------------*/
 
 File::File(FileSystem *_fs, int _id) {
-	Console::puts("Opening file.\n");
+	Console::puts("Opening file with id");Console::puti(_id);Console::puts(".\n");
 	fle_system = _fs;
 	fle_identifier = _id;
 	curr_pos = 0;
@@ -49,7 +49,7 @@ File::File(FileSystem *_fs, int _id) {
 }
 
 File::~File() {
-	Console::puts("Closing file.\n");
+	Console::puts("Closing open file.\n");
 	/* Make sure that you write any cached data to disk. */
 	/* Also make sure that the inode in the inode list is updated. */
 
@@ -66,7 +66,7 @@ File::~File() {
 /*--------------------------------------------------------------------------*/
 
 int File::Read(unsigned int _n, char *_buf) {
-	Console::puts("reading from file\n");
+	Console::puts("reading from open file.\n");
 	int char_cnt = 0;
 	for(int indx = curr_pos; indx<fle_size;indx++){
 		if(char_cnt==_n)
@@ -74,33 +74,33 @@ int File::Read(unsigned int _n, char *_buf) {
 		_buf[char_cnt++] = block_cache[indx];
 	}
 
-	Console::puts("reading from file complete\n");
+	Console::puts("reading from file complete.\n");
 	return char_cnt;
 }
 
 int File::Write(unsigned int _n, const char *_buf) {
-	Console::puts("writing to file\n");
+	Console::puts("writing to open file.\n");
 	int char_cnt = 0;
 	int end_indx = curr_pos+_n;
 	while(curr_pos<end_indx){
 		if(curr_pos==SimpleDisk::BLOCK_SIZE){
-			Console::puts("EOF reached while writing\n");
+			Console::puts("EOF reached while writing.\n");
 			break;
 		}
 		block_cache[curr_pos++]=_buf[char_cnt++];
 		fle_size++;
 	}
 
-	Console::puts("writing to file complete\n");
+	Console::puts("writing to file complete.\n");
 	return char_cnt;
 }
 
 void File::Reset() {
-    Console::puts("resetting file\n");
+    Console::puts("resetting current file.\n");
     curr_pos=0;
 }
 
 bool File::EoF() {
-    Console::puts("checking for EoF\n");
+    Console::puts("checking for EoF.\n");
     return (curr_pos<fle_size);
 }
